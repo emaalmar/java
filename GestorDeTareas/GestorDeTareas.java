@@ -1,86 +1,120 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 
 public class GestorDeTareas {
+
+    private  static final Scanner sc = new Scanner(System.in);
+    private static final ArrayList<Tarea> listaTareas = new ArrayList<>();
+    private static final HashMap<String, Tarea> mapaTareas = new HashMap<>();
+    private static int acumuladorPrioridades = 0;
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
 
         int opcion;
-        int totalPrioridad = 0;
-        Actividad ultimaTarea = null;
         
         do {
             mostrarMenu();
-            opcion = leerOpcion(sc);
-            Resultado resultado = ejecutarOpcion(opcion, sc, totalPrioridad, ultimaTarea);
-            totalPrioridad = resultado.totalPrioridad;
-            ultimaTarea = resultado.tarea;
-        }while (opcion != 3);
-
-         sc.close();
+            opcion = Integer.parseInt(sc.nextLine());
+            switch (opcion) {
+                case 1 -> agregarTarea();
+                case 2 -> listarTareas();
+                case 3 -> buscarTarea();
+                case 4 -> eliminarTarea();
+                case 5 -> mostrarAcumulador();
+                case 6 -> System.out.println("Saliendo del gestor de tareas. ¡Hasta luego!");
+                default -> System.out.println("Opción inválida. Por favor seleccione una opción entre 1 y 6.");
+            }
+        }while (opcion != 6);
     }
+
 
     public static void mostrarMenu(){
         System.out.println("=== Gestor de Tareas ===");
         System.out.println("1. Agregar tarea");
-        System.out.println("2. Ver ultima tarea agregada");
-        System.out.println("3. Salir");
-    }   
-
-    public static int leerOpcion(Scanner sc){ 
-        System.out.print("Seleccione una opción: ");
-        return sc.nextInt();
+        System.out.println("2. Ver lista de tareas");
+        System.out.println("3. Buscar tarea por ID");
+        System.out.println("4. Eliminar tarea por ID");
+        System.out.println("5. Ver total acumulado de prioridades");
+        System.out.println("6. Salir");
+        System.out.println("Elija una opción: ");
     }
 
-    public static Resultado ejecutarOpcion(int opcion, Scanner sc, int totalPrioridad, Actividad tarea){
-        sc.nextLine(); // Limpiar el buffer
-        
-        switch (opcion) {   
-            case  1: 
-                return agregarTarea(sc, totalPrioridad);
-            case 2:
-                if (tarea != null) {
-                    tarea.ejecutar();
-                } else {
-                    System.out.println("No se ha agregado ninguna tarea aún.");
-                }
-                break;
-            case 3:
-                System.out.println("Saliendo del gestor de tareas. ¡Hasta luego!");
-                break;
-            default:
-                System.out.println("Opción inválida. Por favor seleccione una opción entre 1 y 3.");
+    private static void agregarTarea(){
+        System.out.println("ID de la tarea: ");
+        String id = sc. nextLine();
+
+        if (mapaTareas.containsKey(id)){
+            System.out.println("Ya existe una tarea con ese ID.");
+            return;
         }
-            
-        return new Resultado(totalPrioridad, tarea);
-    }
-    
-    public static Resultado agregarTarea(Scanner sc, int totalPrioridad){
-        System.out.print("Nombre de la tarea: ");
-        String nombre= sc.nextLine();
 
-        System.out.print("Prioridad de la tarea (1-5): ");
-        int prioridad = sc.nextInt();
-        sc.nextLine(); // Limpiar el buffer
+        System.out.println("Nombre de la tarea: ");
+        String nombre = sc.nextLine();
 
-        if (prioridad >= 1 && prioridad <= 5){
-            totalPrioridad += prioridad;
-            Tarea nueva = new Tarea(nombre, prioridad);
-            System.out.println("Tarea agregada: " + nombre + " con prioridad " + prioridad);
-            System.out.println("Total acumulado de prioridades: " + totalPrioridad);
-            return new Resultado(totalPrioridad, nueva);
-        } else {
+        System.out.println("Prioridad de la tarea (1-5): ");
+        int prioridad = Integer.parseInt(sc.nextLine());
+
+        if (prioridad < 1 || prioridad > 5) {
             System.out.println("Prioridad inválida. Debe ser un número entre 1 y 5.");
-            return new Resultado(totalPrioridad, null);
+            return;
         }
-    }
-    public static class Resultado {
-        int totalPrioridad;
-        Actividad tarea;
 
-        public Resultado(int totalPrioridad, Actividad tarea){
-            this.totalPrioridad = totalPrioridad;
-            this.tarea = tarea;
+        Tarea nueva = new Tarea(nombre, prioridad);
+        listaTareas.add(nueva);
+        mapaTareas.put(id, nueva);
+        acumuladorPrioridades += prioridad;
+        System.out.println("Tarea agregada exitosamente.");
+        System.out.println("Total acumulado de prioridades: " + acumuladorPrioridades);
+    }
+
+    private static void listarTareas(){
+        if (mapaTareas.isEmpty()){
+            System.out.println("No hay tareas registradas.");
+            return;
+        }
+
+        System.out.println("=== Lista de Tareas ===");
+        for( Map.Entry<String, Tarea> entrada : mapaTareas.entrySet()){
+            System.out.println("ID: " + entrada.getKey() + " - "); 
+            entrada.getValue().ejecutar(); //polimorfismo
+
         }
     }
+
+    private static void buscarTarea(){
+        System.out.println("Ingrese el ID de la tarea a buscar: ");
+        String id = sc.nextLine();
+
+        Tarea t = mapaTareas.get(id);
+        if (t != null){
+            System.out.println("Tarea encontrada: ");
+            t.ejecutar();
+        } else {
+            System.out.println("No se encontró ninguna tarea con ese ID.");
+        }
+    }
+
+    private static void eliminarTarea(){
+        System.out.println("Ingrese el ID de la tarea a eliminar: ");
+        String id = sc.nextLine();
+
+        Tarea eliminada = mapaTareas.remove(id);
+        if (eliminada != null){
+            listaTareas.remove(eliminada);
+            acumuladorPrioridades -= eliminada.getPrioridad();
+            System.out.println("Tarea eliminada exitosamente.");
+            System.out.println("Total acumulado de prioridades actualizado: " + acumuladorPrioridades);
+        } else {
+            System.out.println("No se encontró ninguna tarea con ese ID.");
+        }
+    }
+
+    private static void mostrarAcumulador(){
+        System.out.println("Total acumulado de prioridades: " + acumuladorPrioridades);
+    }
+
+
+    
 }
